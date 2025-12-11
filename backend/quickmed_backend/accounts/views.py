@@ -142,7 +142,185 @@
 
 
 
-from rest_framework.decorators import api_view
+# from rest_framework.decorators import api_view
+# from rest_framework.response import Response
+# from rest_framework import status
+
+# from .serializers import SignupSerializer
+
+# from .models import (
+#     PatientUser,
+#     DoctorUser,
+#     VendorUser,
+#     DeliveryUser
+# )
+
+# from django.contrib.auth.hashers import check_password
+# import random
+
+
+# from rest_framework.decorators import api_view, parser_classes
+# from rest_framework.parsers import MultiPartParser, FormParser
+
+
+
+
+# @api_view(["POST"])
+# @parser_classes([MultiPartParser, FormParser])   # ⬅️ IMPORTANT for images + frontend
+# def signup(request):
+#     serializer = SignupSerializer(data=request.data)
+
+#     if serializer.is_valid():
+#         user = serializer.save()
+#         return Response(
+#             {
+#                 "message": "User registered successfully",
+#                 "userId": user.id,
+#                 "userType": request.data.get("userType"),
+#             },
+#             status=status.HTTP_201_CREATED
+#         )
+
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+# # ------------------------------------
+# # 🟡 EMAIL LOGIN (For all dashboards)
+# # ------------------------------------
+# @api_view(["POST"])
+# def email_login(request):
+#     email = request.data.get("email")
+#     password = request.data.get("password")
+#     userType = request.data.get("userType")
+
+#     user = None
+
+#     # Check in correct table
+#     if userType == "user":
+#         user = PatientUser.objects.filter(email=email).first()
+
+#     elif userType == "doctor":
+#         user = DoctorUser.objects.filter(email=email).first()
+
+#     elif userType == "vendor":
+#         user = VendorUser.objects.filter(email=email).first()
+
+#     elif userType == "delivery":
+#         user = DeliveryUser.objects.filter(email=email).first()
+
+#     else:
+#         return Response({"message": "Invalid userType"}, status=400)
+
+#     if not user:
+#         return Response({"message": "Invalid login"}, status=400)
+
+#     if not check_password(password, user.password):
+#         return Response({"message": "Invalid credentials"}, status=400)
+
+#     return Response({
+#         "message": "Login successful",
+#         "user": {
+#             "fullName": user.fullName,
+#             "email": user.email,
+#             "phone": user.phone,
+#             "userType": userType
+#         }
+#     }, status=200)
+
+
+
+# # ------------------------------------
+# # 🔵 SEND OTP (ONLY Patients login through OTP)
+# # ------------------------------------
+# @api_view(["POST"])
+# def send_otp(request):
+#     phone = request.data.get("phone")
+
+#     # OTP login only allowed for patients/userType=user
+#     user = PatientUser.objects.filter(phone=phone).first()
+
+#     if not user:
+#         return Response(
+#             {"message": "This phone number is not registered as a Patient user"},
+#             status=400
+#         )
+
+#     # Generate OTP
+#     otp = str(random.randint(1000, 9999))
+    
+#     print("🎯 OTP for", phone, "is:", otp)
+
+#     # Save OTP in session
+#     request.session[f"otp_{phone}"] = otp
+
+#     return Response({
+#         "message": "OTP sent successfully",
+#         "phone": phone,
+#         "otp": otp   # Visible in response
+#     }, status=200)
+
+
+
+# # ------------------------------------
+# # 🔴 VERIFY OTP (Only Patients)
+# # ------------------------------------
+# @api_view(["POST"])
+# def verify_otp(request):
+#     phone = request.data.get("phone")
+#     otp = request.data.get("otp")
+
+#     saved_otp = request.session.get(f"otp_{phone}")
+
+#     if saved_otp != otp:
+#         return Response({"message": "Invalid OTP"}, status=400)
+
+#     user = PatientUser.objects.filter(phone=phone).first()
+
+#     if not user:
+#         return Response({"message": "User not found"}, status=400)
+
+#     return Response({
+#         "message": "Login successful",
+#         "user": {
+#             "fullName": user.fullName,
+#             "email": user.email,
+#             "phone": user.phone,
+#             "userType": "user"
+#         }
+#     }, status=200)
+
+
+
+
+
+# from rest_framework.decorators import api_view, parser_classes
+# from rest_framework.parsers import MultiPartParser, FormParser
+# from rest_framework.response import Response
+# from rest_framework import status
+# from .serializers import SignupSerializer
+
+
+
+# @api_view(["POST"])
+# @parser_classes([MultiPartParser, FormParser])
+# def delivery_signup(request):
+
+#     serializer = SignupSerializer(data=request.data)
+
+#     if serializer.is_valid():
+#         user = serializer.save()
+#         return Response({
+#             "message": "Delivery user registered successfully",
+#             "userId": user.id
+#         }, status=201)
+
+#     return Response(serializer.errors, status=400)
+
+
+
+from rest_framework.decorators import api_view, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -159,24 +337,32 @@ from django.contrib.auth.hashers import check_password
 import random
 
 
-# ------------------------------------
-# 🟢 SIGNUP (Works for all 4 user types)
-# ------------------------------------
+# --------------------------------------------------------
+# 🔵 UNIVERSAL SIGNUP — Works for JSON + Multipart + All Users
+# --------------------------------------------------------
 @api_view(["POST"])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 def signup(request):
     serializer = SignupSerializer(data=request.data)
-    
+
     if serializer.is_valid():
         user = serializer.save()
-        return Response({"message": "User registered successfully"}, status=201)
+        return Response(
+            {
+                "message": "User registered successfully",
+                "userId": user.id,
+                "userType": request.data.get("userType"),
+            },
+            status=status.HTTP_201_CREATED
+        )
 
-    return Response(serializer.errors, status=400)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
-# ------------------------------------
+# --------------------------------------------------------
 # 🟡 EMAIL LOGIN (For all dashboards)
-# ------------------------------------
+# --------------------------------------------------------
 @api_view(["POST"])
 def email_login(request):
     email = request.data.get("email")
@@ -185,19 +371,14 @@ def email_login(request):
 
     user = None
 
-    # Check in correct table
     if userType == "user":
         user = PatientUser.objects.filter(email=email).first()
-
     elif userType == "doctor":
         user = DoctorUser.objects.filter(email=email).first()
-
     elif userType == "vendor":
         user = VendorUser.objects.filter(email=email).first()
-
     elif userType == "delivery":
         user = DeliveryUser.objects.filter(email=email).first()
-
     else:
         return Response({"message": "Invalid userType"}, status=400)
 
@@ -219,14 +400,13 @@ def email_login(request):
 
 
 
-# ------------------------------------
-# 🔵 SEND OTP (ONLY Patients login through OTP)
-# ------------------------------------
+# --------------------------------------------------------
+# 🔵 SEND OTP (ONLY Patient Users)
+# --------------------------------------------------------
 @api_view(["POST"])
 def send_otp(request):
     phone = request.data.get("phone")
 
-    # OTP login only allowed for patients/userType=user
     user = PatientUser.objects.filter(phone=phone).first()
 
     if not user:
@@ -235,25 +415,22 @@ def send_otp(request):
             status=400
         )
 
-    # Generate OTP
     otp = str(random.randint(1000, 9999))
-    
     print("🎯 OTP for", phone, "is:", otp)
 
-    # Save OTP in session
     request.session[f"otp_{phone}"] = otp
 
     return Response({
         "message": "OTP sent successfully",
         "phone": phone,
-        "otp": otp   # Visible in response
+        "otp": otp
     }, status=200)
 
 
 
-# ------------------------------------
-# 🔴 VERIFY OTP (Only Patients)
-# ------------------------------------
+# --------------------------------------------------------
+# 🔴 VERIFY OTP (Patient Only)
+# --------------------------------------------------------
 @api_view(["POST"])
 def verify_otp(request):
     phone = request.data.get("phone")
@@ -278,3 +455,22 @@ def verify_otp(request):
             "userType": "user"
         }
     }, status=200)
+
+
+
+# --------------------------------------------------------
+# 🟣 DELIVERY SIGNUP — SEPARATE ENDPOINT (Multipart Only)
+# --------------------------------------------------------
+@api_view(["POST"])
+@parser_classes([MultiPartParser, FormParser])
+def delivery_signup(request):
+    serializer = SignupSerializer(data=request.data)
+
+    if serializer.is_valid():
+        user = serializer.save()
+        return Response({
+            "message": "Delivery user registered successfully",
+            "userId": user.id
+        }, status=201)
+
+    return Response(serializer.errors, status=400)

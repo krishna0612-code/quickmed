@@ -1,15 +1,9 @@
-# from django.urls import path
-# from .views import signup
-
-# urlpatterns = [
-#     path("signup/", signup, name="signup"),
-# ]
-
 from django.urls import path
-from .views import signup, email_login, send_otp, verify_otp
+from .views import signup, email_login, send_otp, verify_otp, delivery_signup
 
 urlpatterns = [
     path("signup/", signup, name="signup"),
+    path("delivery/signup/", delivery_signup, name="delivery_signup"),
 
     # Email Login (POST)
     path("login/email/", email_login, name="email_login"),
